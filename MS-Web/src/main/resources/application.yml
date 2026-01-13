@@ -1,6 +1,6 @@
 spring:
     application:
-        name: mapsee-be
+        name: mapsee
     profiles:
         active: prod
     flyway:
