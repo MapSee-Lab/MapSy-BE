@@ -1,11 +1,29 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-18T05:00:21Z",
-    "currentVersion": "0.1.2",
+    "lastUpdated": "2026-01-18T15:29:36Z",
+    "currentVersion": "0.1.8",
     "projectType": "spring",
-    "totalReleases": 2
+    "totalReleases": 3
   },
   "releases": [
+    {
+      "version": "0.1.8",
+      "project_type": "spring",
+      "date": "2026-01-18",
+      "pr_number": 5,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리즈 노트\n\n* **Chores**\n  * 프로젝트명을 \"MapSee-AI\"에서 \"MapSy\"로 업데이트했습니다.\n  * 빌드 및 배포 설정을 새 프로젝트명에 맞게 조정했습니다.\n  * API 애플리케이션 메타데이터 및 사용자 식별 정보를 업데이트했습니다.",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "프로젝트명을 \"MapSee-AI\"에서 \"MapSy\"로 업데이트했습니다.",
+            "빌드 및 배포 설정을 새 프로젝트명에 맞게 조정했습니다.",
+            "API 애플리케이션 메타데이터 및 사용자 식별 정보를 업데이트했습니다."
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "0.1.2",
       "project_type": "spring",
