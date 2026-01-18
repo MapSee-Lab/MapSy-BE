@@ -2,7 +2,7 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
 
-rootProject.name = 'mapsee'
+rootProject.name = 'mapsy'
 
 include 'MS-Common'
 include 'MS-Auth'

@@ -15,7 +15,7 @@ build/
 
 # Firebase
 *-fcm.json
-mapsee-fcm.json
+mapsy-fcm.json
 
 # Environment & Secrets
 application-prod.yml

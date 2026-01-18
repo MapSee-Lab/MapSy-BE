@@ -1,10 +1,10 @@
 # ===================================================================
-# MapSee-BE Spring Boot Dockerfile
+# MapSy-BE Spring Boot Dockerfile
 # ===================================================================
 FROM eclipse-temurin:21-jre-alpine
 
-LABEL maintainer="MapSee Team"
-LABEL description="MapSee Backend API Server"
+LABEL maintainer="MapSy Team"
+LABEL description="MapSy Backend API Server"
 
 WORKDIR /app
 

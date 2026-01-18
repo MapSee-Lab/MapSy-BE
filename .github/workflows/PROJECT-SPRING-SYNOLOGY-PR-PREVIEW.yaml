@@ -70,7 +70,7 @@ name: PROJECT-SPRING-SYNOLOGY-PR-PREVIEW
 # ===================================================================
 env:
   # 프로젝트 고유 식별자 (컨테이너명, 이미지명, 도메인에 사용) (프로젝트별 수정 필요)
-  PROJECT_NAME: mapsee-be
+  PROJECT_NAME: mapsy-be
 
   # Spring Boot 빌드 설정 (프로젝트별 수정 필요)
   JAVA_VERSION: '21'

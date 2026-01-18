@@ -1,6 +1,6 @@
 spring:
     application:
-        name: mapsee
+        name: mapsy
     profiles:
         active: prod
     flyway:
@@ -30,7 +30,7 @@ decorator:
 # Swagger/OpenAPI 설정
 springdoc:
     servers:
-        - url: https://api.mapsee.suhsaechan.kr
+        - url: https://api.mapsy.suhsaechan.kr
           description: main-server
         - url: http://localhost:8080
           description: local-server
@@ -44,7 +44,7 @@ springdoc:
         operations-sorter: alpha
         try-it-out-enabled: true
         filter: true
-    packages-to-scan: kr.suhsaechan.mapsee
+    packages-to-scan: kr.suhsaechan.mapsy
     paths-to-match: /api/**
     default-consumes-media-type: application/json;charset=UTF-8
     default-produces-media-type: application/json;charset=UTF-8
@@ -52,11 +52,11 @@ springdoc:
 # GitHub Issue 연동
 suhapilog:
     github:
-        base-url: https://github.com/suhsaechan/MapSee-BE/issues/
+        base-url: https://github.com/MapSee-Lab/MapSy-BE/issues/
 
 firebase:
     credentials:
-        path: mapsee-fcm.json
+        path: mapsy-fcm.json
 
 suh-logger:
   # 전체 로깅 활성화 여부
