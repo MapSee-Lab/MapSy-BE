@@ -26,7 +26,6 @@ name: PROJECT-SPRING-SYNOLOGY-CICD
 # 🌐 포트 및 볼륨 설정 (워크플로우 env 섹션에서 설정):
 # ┌─────────────────────────────┬────────────────────────────────────┐
 # │ DEPLOY_PORT                 │ deploy/main 브랜치 배포 포트       │
-# │ TEST_PORT                   │ test 브랜치 배포 포트              │
 # ├─────────────────────────────┼────────────────────────────────────┤
 # │ ENABLE_VOLUME_MOUNT         │ 볼륨 마운트 활성화 (true/false)    │
 # │ VOLUME_HOST_PATH            │ 호스트 볼륨 경로                   │
@@ -35,7 +34,6 @@ name: PROJECT-SPRING-SYNOLOGY-CICD
 #
 # 💡 포트 설정 예시 (env 섹션에서 변경):
 #   DEPLOY_PORT: "8092"  # 배포 서비스 포트
-#   TEST_PORT: "8093"    # 테스트 서비스 포트
 #
 # ⚠️ 주의사항:
 # 1. 포트는 서버에서 사용하지 않는 포트를 선택하세요
@@ -64,19 +62,18 @@ name: PROJECT-SPRING-SYNOLOGY-CICD
 # 🌿 브랜치별 배포 전략:
 # - deploy 브랜치: 배포 환경 (DEPLOY_PORT 사용)
 # - main 브랜치: 배포 환경 (수동 실행시, DEPLOY_PORT 사용)
-# - test 브랜치: 테스트 환경 (TEST_PORT 사용)
 #
 # 📝 사용 방법:
 # 1. 위의 GitHub Secrets 설정
-# 2. 아래 env 섹션에서 PROJECT_NAME, DEPLOY_PORT, TEST_PORT 등 설정
-# 3. deploy와 test 브랜치에 push하면 자동으로 CI/CD 실행 (main 브랜치는 수동 실행만 가능)
+# 2. 아래 env 섹션에서 PROJECT_NAME, DEPLOY_PORT 등 설정
+# 3. deploy 브랜치에 push하면 자동으로 CI/CD 실행 (main 브랜치는 수동 실행만 가능)
 #
 # ===================================================================
 
 # ===================================================================
 # 트리거 설정
 # ===================================================================
-# deploy와 test 브랜치에 push할 때 자동으로 CI/CD가 실행됩니다.
+# deploy 브랜치에 push할 때 자동으로 CI/CD가 실행됩니다.
 # main 브랜치는 workflow_dispatch로 수동 실행만 가능합니다.
 on:
   push:
@@ -312,15 +309,14 @@ jobs:
             echo "🔗 접속 URL: http://${{ secrets.SERVER_HOST }}:${PORT}"
 
 # ===================================================================
-# 사용 예시 - deploy와 test 브랜치 사용
+# 사용 예시
 # ===================================================================
 #
-# 현재 설정: deploy와 test 브랜치에 push할 때 자동 배포
+# 현재 설정: deploy 브랜치에 push할 때 자동 배포
 # main 브랜치는 수동 실행(workflow_dispatch)만 가능
 #
-# 브랜치별 포트 (env 섹션에서 설정):
+# 포트 설정 (env 섹션에서 설정):
 # - deploy/main: DEPLOY_PORT (기본: 8092)
-# - test: TEST_PORT (기본: 8093)
 #
 # 필요한 Secrets:
 # - APPLICATION_PROD_YML, DOCKERHUB_*, SERVER_* (필수)
@@ -328,7 +324,6 @@ jobs:
 # env 섹션에서 설정하는 값들:
 # - PROJECT_NAME: 프로젝트명
 # - DEPLOY_PORT: 배포 포트
-# - TEST_PORT: 테스트 포트
 # - ENABLE_VOLUME_MOUNT: 볼륨 마운트 활성화 여부
 #
 # ===================================================================
