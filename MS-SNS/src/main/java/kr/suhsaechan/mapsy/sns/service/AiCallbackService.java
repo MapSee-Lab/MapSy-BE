@@ -7,14 +7,12 @@ import kr.suhsaechan.mapsy.common.exception.CustomException;
 import kr.suhsaechan.mapsy.common.exception.constant.ErrorCode;
 import kr.suhsaechan.mapsy.place.constant.PlacePlatform;
 import kr.suhsaechan.mapsy.place.constant.PlaceSavedStatus;
-import kr.suhsaechan.mapsy.place.dto.GooglePlaceSearchDto;
 import kr.suhsaechan.mapsy.place.entity.MemberPlace;
 import kr.suhsaechan.mapsy.place.entity.Place;
 import kr.suhsaechan.mapsy.place.entity.PlacePlatformReference;
 import kr.suhsaechan.mapsy.place.repository.MemberPlaceRepository;
 import kr.suhsaechan.mapsy.place.repository.PlacePlatformReferenceRepository;
 import kr.suhsaechan.mapsy.place.repository.PlaceRepository;
-import kr.suhsaechan.mapsy.place.service.PlaceSearchService;
 import kr.suhsaechan.mapsy.sns.entity.Content;
 import kr.suhsaechan.mapsy.sns.entity.ContentMember;
 import kr.suhsaechan.mapsy.sns.entity.ContentPlace;
@@ -46,7 +44,6 @@ public class AiCallbackService {
   private final ContentPlaceRepository contentPlaceRepository;
   private final PlacePlatformReferenceRepository placePlatformReferenceRepository;
   private final MemberPlaceRepository memberPlaceRepository;
-  private final PlaceSearchService placeSearchService;
   private final FcmService fcmService;
 
   /**
@@ -105,7 +102,7 @@ public class AiCallbackService {
    *
    * - Content가 COMPLETED 상태: 기존 ContentPlace 삭제 후 재생성 (업데이트 모드)
    * - Content가 PENDING/FAILED 상태: 신규 ContentPlace 생성
-   * - Google Places API 호출하여 place_id 및 상세 정보 획득
+   * - TODO: AI 서버에서 받은 Place 정보로 직접 Place 생성 (나중에 구현 예정)
    *
    * @param content 대상 Content
    * @param request AI Callback 요청
@@ -131,57 +128,17 @@ public class AiCallbackService {
 
     contentRepository.save(content);
 
-    // AI 서버에서 받은 Place 정보로 ContentPlace 생성
+    // TODO: AI 서버에서 받은 Place 정보로 직접 Place 생성하도록 수정 필요
+    // 현재는 Google Places API 호출이 제거되어 Place 저장 로직이 임시로 비활성화됨
     if (request.getPlaces() != null && !request.getPlaces().isEmpty()) {
       List<AiCallbackRequest.PlaceInfo> places = request.getPlaces();
-      log.info("Processing {} places for contentId={} (update mode: {})",
+      log.info("Received {} places for contentId={} (update mode: {}). Place saving temporarily disabled.",
           places.size(), content.getId(), isContentAlreadyCompleted);
 
-      // 각 Place 정보를 순회하며 저장
-      for (int i = 0; i < places.size(); i++) {
-        AiCallbackRequest.PlaceInfo placeInfo = places.get(i);
-
-        log.info("Processing place {}/{}", i + 1, places.size());
-        log.info("Place Name: {}", placeInfo.getName());
-        log.info("Address: {}", placeInfo.getAddress());
-        
-        // language 필드가 null이면 기본값 "ko" 사용
-        String language = placeInfo.getLanguage() != null ? placeInfo.getLanguage() : "ko";
-        log.info("Language: {}", language);
-
-        try {
-          // 1. Google Places API 호출 (실패 시 CustomException 발생)
-          GooglePlaceSearchDto.PlaceDetail googlePlace = placeSearchService.searchGooglePlace(
-              placeInfo.getName(),
-              placeInfo.getAddress(),
-              language
-          );
-
-          // 2. Google 응답으로 Place 생성/업데이트
-          Place place = createOrUpdatePlace(googlePlace);
-
-          // 3. PlacePlatformReference 저장 (Google place_id)
-          savePlacePlatformReference(place, googlePlace.getPlaceId());
-
-          // 4. Content와 Place 연결 생성 (position 포함)
-          createContentPlace(content, place, i);
-
-          // 5. 해당 Content를 요청한 모든 회원에게 MemberPlace 생성
-          createMemberPlaces(content, place);
-
-          log.info("Place processed successfully: DB ID={}", place.getId());
-
-
-        } catch (CustomException e) {
-          log.error("Failed to process place {}/{}", i + 1, places.size());
-          log.error("Place Name: {}", placeInfo.getName());
-          log.error("HTTP Status: {}", e.getStatus());
-          log.error("Error Message: {}", e.getMessage());
-
-          // 예외 재발생으로 전체 트랜잭션 롤백
-          throw e;
-        }
-      }
+      // TODO: AiCallbackRequest.PlaceInfo에서 직접 Place 생성하도록 구현 필요
+      // - 위도/경도 정보가 AI 서버 응답에 포함되어야 함
+      // - Place 생성 로직 재구현 필요
+      log.warn("Place saving is temporarily disabled. Will be implemented later with AI server response data.");
     } else {
       // Place 데이터가 없는 경우 경고 로그
       log.warn("No places found in callback for contentId={}", content.getId());
@@ -277,14 +234,9 @@ public class AiCallbackService {
     contentRepository.save(content);
   }
 
-  /**
-   * Google Places API 응답으로 Place 생성 또는 업데이트
-   * <p>
-   * 이름+좌표로 중복 체크 후 없으면 신규 생성
-   *
-   * @param googlePlace Google Places API 응답
-   * @return 조회 또는 생성된 Place
-   */
+  // TODO: Google Places API 제거로 인해 임시로 주석 처리
+  // 나중에 AI 서버 응답 데이터(AiCallbackRequest.PlaceInfo)로 직접 Place 생성하도록 재구현 필요
+  /*
   private Place createOrUpdatePlace(GooglePlaceSearchDto.PlaceDetail googlePlace) {
     // 이름+좌표로 중복 체크
     Optional<Place> existing = placeRepository.findByNameAndLatitudeAndLongitude(
@@ -330,14 +282,6 @@ public class AiCallbackService {
     }
   }
 
-  /**
-   * PlacePlatformReference 저장
-   * <p>
-   * Google place_id를 PlacePlatformReference에 저장 (중복 체크)
-   *
-   * @param place         장소
-   * @param googlePlaceId Google place_id
-   */
   private void savePlacePlatformReference(Place place, String googlePlaceId) {
     log.info("Saving PlacePlatformReference: placeId={}, googlePlaceId={}", place.getId(), googlePlaceId);
 
@@ -358,6 +302,7 @@ public class AiCallbackService {
           existing.get().getId(), place.getId(), existing.get().getPlacePlatformId(), googlePlaceId);
     }
   }
+  */
 
   /**
    * ContentPlace 연결 생성
