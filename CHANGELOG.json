@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "lastUpdated": "2026-01-18T04:06:47Z",
+    "currentVersion": "0.1.1",
+    "projectType": "spring",
+    "totalReleases": 1
+  },
+  "releases": [
+    {
+      "version": "0.1.1",
+      "project_type": "spring",
+      "date": "2026-01-18",
+      "pr_number": 3,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **New Features**\n  * Docker 컨테이너 배포 지원 추가 (Alpine 기반 경량 이미지)\n  * 헬스 체크 엔드포인트 활성화\n\n* **Chores**\n  * 프로젝트 버전 0.1.1로 업데이트\n  * CI/CD 파이프라인 구성 개선\n  * 빌드 산출물 최적화",
+      "parsed_changes": {
+        "new_features": {
+          "title": "New Features",
+          "items": [
+            "Docker 컨테이너 배포 지원 추가 (Alpine 기반 경량 이미지)",
+            "헬스 체크 엔드포인트 활성화"
+          ]
+        },
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "프로젝트 버전 0.1.1로 업데이트",
+            "CI/CD 파이프라인 구성 개선",
+            "빌드 산출물 최적화"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    }
+  ]
+}
