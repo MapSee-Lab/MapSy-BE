@@ -57,3 +57,23 @@ suhapilog:
 firebase:
     credentials:
         path: mapsee-fcm.json
+
+suh-logger:
+  # 전체 로깅 활성화 여부
+  enabled: true                    # true(기본값), false
+  pretty-print-json: true         # false(기본값), true
+  max-response-body-size: 9000     # 양의 정수 (기본값: 4096)
+  exclude-patterns:                # 문자열 배열 (기본값: 빈 배열)
+  #    - /actuator                  # Spring Boot Actuator 제외
+  #    - /health                    # Health Check 제외
+  #    - /login                     # 로그인 엔드포인트 제외 (예시)
+  #    - /logout                    # 로그아웃 엔드포인트 제외 (예시)
+  #    - /auth                      # 인증 관련 엔드포인트 제외 (예시)
+  excluded-classes:                # 문자열 배열 (기본값: 빈 배열)
+  #    - org.springframework.web.multipart.MultipartFile
+  #    - java.util.Vector
+  #    - java.io.File
+  masking:
+    header: true                   # true(기본값), false - 민감한 헤더 마스킹 여부
+  header:
+    enabled: false
