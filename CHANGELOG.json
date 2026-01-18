@@ -1,11 +1,34 @@
 {
   "metadata": {
-    "lastUpdated": "2026-01-18T04:06:47Z",
-    "currentVersion": "0.1.1",
+    "lastUpdated": "2026-01-18T05:00:21Z",
+    "currentVersion": "0.1.2",
     "projectType": "spring",
-    "totalReleases": 1
+    "totalReleases": 2
   },
   "releases": [
+    {
+      "version": "0.1.2",
+      "project_type": "spring",
+      "date": "2026-01-18",
+      "pr_number": 4,
+      "raw_summary": "## Summary by CodeRabbit\n\n* **Chores**\n  * CI/CD 배포 프로세스에 선택적 볼륨 마운트 지원 추가\n  * 버전을 v0.1.2로 업데이트 및 메타데이터 동기화\n\n* **Documentation**\n  * 버전 정보 및 문서 업데이트",
+      "parsed_changes": {
+        "chores": {
+          "title": "Chores",
+          "items": [
+            "CI/CD 배포 프로세스에 선택적 볼륨 마운트 지원 추가",
+            "버전을 v0.1.2로 업데이트 및 메타데이터 동기화"
+          ]
+        },
+        "documentation": {
+          "title": "Documentation",
+          "items": [
+            "버전 정보 및 문서 업데이트"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "0.1.1",
       "project_type": "spring",
