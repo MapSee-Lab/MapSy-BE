@@ -1,0 +1,526 @@
+# ===================================================================
+# GitHub Projects Backlog 자동 관리 워크플로우
+# ===================================================================
+#
+# 이 워크플로우는 GitHub Issue와 Projects를 자동으로 동기화합니다.
+#
+# 작동 방식:
+# 1. Issue 생성 시 자동으로 프로젝트에 추가 (PR은 옵션)
+# 2. Issue Label 변경 시 Projects Status 자동 동기화
+# 3. Issue 닫기 시 Projects Status를 "작업 완료"로 자동 변경 (PR은 옵션)
+#
+# 지원 기능:
+# - Issue 생성 → 프로젝트 자동 추가 (기본 Status: "작업 전")
+# - PR 생성 → 프로젝트 자동 추가 (옵션, 기본값: 비활성화)
+# - Label 변경 → Projects Status 실시간 동기화 (Issue만 지원)
+#   • 작업 전 → 작업 전
+#   • 작업 중 → 작업 중
+#   • 확인 대기 → 확인 대기
+#   • 피드백 → 피드백
+#   • 작업 완료 → 작업 완료
+#   • 취소 → 취소
+# - Issue 닫기 → "작업 완료" Status 자동 설정
+# - PR 닫기 → "작업 완료" Status 자동 설정 (옵션, 기본값: 비활성화)
+# - 여러 Status Label 동시 존재 시 우선순위 정책 적용
+#
+# Label 우선순위:
+# 작업 완료 > 취소 > 피드백 > 확인 대기 > 작업 중 > 작업 전
+#
+# 필수 설정:
+# - Organization Secret: _GITHUB_PAT_TOKEN (프로젝트 추가용)
+# - Organization Secret: UPDATE_PROJECT_V2_PAT (Status 업데이트용, Classic PAT 필요)
+#   • 필요 권한: repo (전체), project (read:project, write:project)
+#   • Fine-grained token은 GraphQL API 미지원
+#
+# 환경변수 설정:
+# - ENABLE_PR_AUTO_ADD: PR 생성 시 프로젝트 자동 추가 (기본값: false)
+# - ENABLE_PR_AUTO_CLOSE: PR 닫기 시 작업 완료 처리 (기본값: false)
+#
+# 사용 예시:
+# - Issue만 자동화: 기본 설정 사용 (변경 불필요)
+# - PR도 자동화: env에서 ENABLE_PR_AUTO_ADD와 ENABLE_PR_AUTO_CLOSE를 true로 변경
+#
+# ===================================================================
+
+name: PROJECT-BACKLOG-MANAGER
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, closed]
+  pull_request:
+    types: [opened, closed]
+
+# ===================================================================
+# 설정 변수
+# ===================================================================
+env:
+  PROJECT_URL: https://github.com/orgs/MapSee-Lab/projects/1
+  STATUS_FIELD: Status
+  # PR 자동화 옵션 (기본값: false - Issue만 처리)
+  ENABLE_PR_AUTO_ADD: false    # PR 생성 시 프로젝트 자동 추가
+  ENABLE_PR_AUTO_CLOSE: false  # PR 닫기 시 작업 완료 처리
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  # ===================================================================
+  # Job 1: Issue/PR 생성 시 프로젝트에 자동 추가
+  # ===================================================================
+  add-to-project:
+    name: 프로젝트에 Issue/PR 추가
+    if: |
+      github.event.action == 'opened' &&
+      (
+        github.event_name == 'issues' ||
+        (github.event_name == 'pull_request' && env.ENABLE_PR_AUTO_ADD == 'true')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: 프로젝트에 Issue/PR 추가
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: ${{ env.PROJECT_URL }}
+          github-token: ${{ secrets._GITHUB_PAT_TOKEN }}
+
+      - name: 추가 완료 로그
+        run: |
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            echo "✅ Issue가 프로젝트에 추가되었습니다."
+            echo "  • 번호: #${{ github.event.issue.number }}"
+          else
+            echo "✅ PR이 프로젝트에 추가되었습니다. (ENABLE_PR_AUTO_ADD: true)"
+            echo "  • 번호: #${{ github.event.pull_request.number }}"
+          fi
+          echo "  • 프로젝트: ${{ env.PROJECT_URL }}"
+
+  # ===================================================================
+  # Job 2: Label 변경 시 Projects Status 동기화
+  # ===================================================================
+  sync-label-to-status:
+    name: Label을 Projects Status로 동기화
+    if: |
+      github.event_name == 'issues' &&
+      (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    runs-on: ubuntu-latest
+    steps:
+      - name: 현재 Issue의 모든 Label 조회
+        id: get-labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📋 Label 조회 시작');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const labels = issue.data.labels.map(label => label.name);
+            console.log(`📌 Issue #${context.issue.number}의 현재 Labels:`);
+            console.log(`  ${labels.join(', ') || '(없음)'}`);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            return labels;
+
+      - name: Status로 매핑할 Label 결정
+        id: determine-status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('🎯 Status 결정 시작');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            const labels = ${{ steps.get-labels.outputs.result }};
+
+            // Status Label 우선순위 (높음 → 낮음)
+            const statusPriority = [
+              '작업 완료',
+              '취소',
+              '피드백',
+              '확인 대기',
+              '작업 중',
+              '작업 전'
+            ];
+
+            // 현재 Label 중 Status Label 찾기
+            let targetStatus = '';
+            for (const status of statusPriority) {
+              if (labels.includes(status)) {
+                targetStatus = status;
+                console.log(`✅ Status Label 발견: "${targetStatus}"`);
+                break;
+              }
+            }
+
+            if (!targetStatus) {
+              console.log('⚠️ Status Label이 없습니다. Status 업데이트 건너뜀');
+            } else {
+              console.log(`🎯 Projects Status로 설정할 값: "${targetStatus}"`);
+            }
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            return targetStatus;
+
+      - name: Projects Status 업데이트
+        if: steps.determine-status.outputs.result != ''
+        uses: actions/github-script@v7
+        env:
+          TARGET_STATUS: ${{ steps.determine-status.outputs.result }}
+          PAT_TOKEN: ${{ secrets.UPDATE_PROJECT_V2_PAT }}
+        with:
+          github-token: ${{ secrets.UPDATE_PROJECT_V2_PAT }}
+          script: |
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('🔄 Projects Status 업데이트 시작');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            const targetStatus = process.env.TARGET_STATUS;
+            const issueNodeId = context.payload.issue.node_id;
+            const projectUrl = '${{ env.PROJECT_URL }}';
+
+            console.log(`📌 Issue Node ID: ${issueNodeId}`);
+            console.log(`📌 목표 Status: "${targetStatus}"`);
+            console.log(`📌 프로젝트 URL: ${projectUrl}`);
+
+            try {
+              // 1. 프로젝트 번호 추출
+              const projectMatch = projectUrl.match(/\/projects\/(\d+)/);
+              if (!projectMatch) {
+                throw new Error('프로젝트 URL에서 번호를 추출할 수 없습니다.');
+              }
+              const projectNumber = parseInt(projectMatch[1]);
+              console.log(`📊 프로젝트 번호: ${projectNumber}`);
+
+              // 2. 조직 프로젝트 정보 조회
+              const orgLogin = context.repo.owner;
+              console.log(`🏢 조직명: ${orgLogin}`);
+
+              const projectQuery = `
+                query($orgLogin: String!, $projectNumber: Int!) {
+                  organization(login: $orgLogin) {
+                    projectV2(number: $projectNumber) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectData = await github.graphql(projectQuery, {
+                orgLogin,
+                projectNumber
+              });
+
+              const project = projectData.organization.projectV2;
+              const projectId = project.id;
+              console.log(`✅ 프로젝트 ID: ${projectId}`);
+
+              // 3. Status 필드 및 옵션 ID 찾기
+              const statusField = project.fields.nodes.find(
+                field => field.name === '${{ env.STATUS_FIELD }}'
+              );
+
+              if (!statusField) {
+                throw new Error('Status 필드를 찾을 수 없습니다.');
+              }
+
+              const fieldId = statusField.id;
+              console.log(`✅ Status 필드 ID: ${fieldId}`);
+
+              const statusOption = statusField.options.find(
+                option => option.name === targetStatus
+              );
+
+              if (!statusOption) {
+                throw new Error(`"${targetStatus}" 옵션을 찾을 수 없습니다.`);
+              }
+
+              const optionId = statusOption.id;
+              console.log(`✅ "${targetStatus}" 옵션 ID: ${optionId}`);
+
+              // 4. Issue의 프로젝트 아이템 ID 조회
+              const itemQuery = `
+                query($issueId: ID!) {
+                  node(id: $issueId) {
+                    ... on Issue {
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          project {
+                            id
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const itemData = await github.graphql(itemQuery, {
+                issueId: issueNodeId
+              });
+
+              const projectItem = itemData.node.projectItems.nodes.find(
+                item => item.project.id === projectId
+              );
+
+              if (!projectItem) {
+                console.log('⚠️ 이 Issue가 프로젝트에 추가되지 않았습니다.');
+                console.log('   프로젝트 추가 후 Label을 다시 변경해주세요.');
+                return;
+              }
+
+              const itemId = projectItem.id;
+              console.log(`✅ 프로젝트 아이템 ID: ${itemId}`);
+
+              // 5. Status 업데이트 뮤테이션 실행
+              const updateMutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { singleSelectOptionId: $optionId }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(updateMutation, {
+                projectId,
+                itemId,
+                fieldId,
+                optionId
+              });
+
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('🎉 Projects Status 업데이트 완료!');
+              console.log(`  • Issue: #${context.issue.number}`);
+              console.log(`  • Status: "${targetStatus}"`);
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            } catch (error) {
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.error('❌ Status 업데이트 실패');
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.error(error);
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              throw error;
+            }
+
+  # ===================================================================
+  # Job 3: Issue/PR 닫기 시 "작업 완료" Status로 변경
+  # ===================================================================
+  move-closed-to-done:
+    name: 닫힌 Issue/PR을 작업 완료로 이동
+    if: |
+      github.event.action == 'closed' &&
+      (
+        github.event_name == 'issues' ||
+        (github.event_name == 'pull_request' && env.ENABLE_PR_AUTO_CLOSE == 'true')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Projects Status를 "작업 완료"로 업데이트
+        uses: actions/github-script@v7
+        env:
+          DONE_STATUS: 작업 완료
+          PAT_TOKEN: ${{ secrets.UPDATE_PROJECT_V2_PAT }}
+        with:
+          github-token: ${{ secrets.UPDATE_PROJECT_V2_PAT }}
+          script: |
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('🏁 Issue/PR 닫기 감지 - 작업 완료 처리');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            const targetStatus = process.env.DONE_STATUS;
+            const itemNodeId = context.payload.issue?.node_id || context.payload.pull_request?.node_id;
+            const itemNumber = context.payload.issue?.number || context.payload.pull_request?.number;
+            const itemType = context.payload.issue ? 'Issue' : 'Pull Request';
+            const projectUrl = '${{ env.PROJECT_URL }}';
+
+            console.log(`📌 ${itemType} #${itemNumber}`);
+            console.log(`📌 Node ID: ${itemNodeId}`);
+            console.log(`📌 목표 Status: "${targetStatus}"`);
+
+            try {
+              // 1. 프로젝트 번호 추출
+              const projectMatch = projectUrl.match(/\/projects\/(\d+)/);
+              if (!projectMatch) {
+                throw new Error('프로젝트 URL에서 번호를 추출할 수 없습니다.');
+              }
+              const projectNumber = parseInt(projectMatch[1]);
+
+              // 2. 조직 프로젝트 정보 조회
+              const orgLogin = context.repo.owner;
+
+              const projectQuery = `
+                query($orgLogin: String!, $projectNumber: Int!) {
+                  organization(login: $orgLogin) {
+                    projectV2(number: $projectNumber) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectData = await github.graphql(projectQuery, {
+                orgLogin,
+                projectNumber
+              });
+
+              const project = projectData.organization.projectV2;
+              const projectId = project.id;
+
+              // 3. Status 필드 및 "작업 완료" 옵션 ID 찾기
+              const statusField = project.fields.nodes.find(
+                field => field.name === '${{ env.STATUS_FIELD }}'
+              );
+
+              if (!statusField) {
+                throw new Error('Status 필드를 찾을 수 없습니다.');
+              }
+
+              const fieldId = statusField.id;
+
+              const doneOption = statusField.options.find(
+                option => option.name === targetStatus
+              );
+
+              if (!doneOption) {
+                throw new Error(`"${targetStatus}" 옵션을 찾을 수 없습니다.`);
+              }
+
+              const optionId = doneOption.id;
+              console.log(`✅ "${targetStatus}" 옵션 ID: ${optionId}`);
+
+              // 4. Issue/PR의 프로젝트 아이템 ID 조회
+              const itemQuery = context.payload.issue
+                ? `
+                  query($itemId: ID!) {
+                    node(id: $itemId) {
+                      ... on Issue {
+                        projectItems(first: 10) {
+                          nodes {
+                            id
+                            project {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `
+                : `
+                  query($itemId: ID!) {
+                    node(id: $itemId) {
+                      ... on PullRequest {
+                        projectItems(first: 10) {
+                          nodes {
+                            id
+                            project {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+
+              const itemData = await github.graphql(itemQuery, {
+                itemId: itemNodeId
+              });
+
+              const projectItem = itemData.node.projectItems.nodes.find(
+                item => item.project.id === projectId
+              );
+
+              if (!projectItem) {
+                console.log(`⚠️ 이 ${itemType}가 프로젝트에 추가되지 않았습니다.`);
+                console.log('   자동 완료 처리를 건너뜁니다.');
+                return;
+              }
+
+              const itemId = projectItem.id;
+              console.log(`✅ 프로젝트 아이템 ID: ${itemId}`);
+
+              // 5. Status 업데이트 뮤테이션 실행
+              const updateMutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { singleSelectOptionId: $optionId }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(updateMutation, {
+                projectId,
+                itemId,
+                fieldId,
+                optionId
+              });
+
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('🎉 작업 완료 처리 성공!');
+              console.log(`  • ${itemType}: #${itemNumber}`);
+              console.log(`  • Status: "${targetStatus}"`);
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            } catch (error) {
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.error('❌ 작업 완료 처리 실패');
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.error(error);
+              console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+              // 실패해도 워크플로우는 성공으로 처리 (GitHub 기본 자동화가 있을 수 있음)
+              console.log('⚠️ GitHub Projects 기본 자동화를 확인하세요.');
+            }
