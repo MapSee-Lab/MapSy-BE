@@ -174,7 +174,7 @@ jobs:
         if: steps.determine-status.outputs.result != ''
         uses: actions/github-script@v7
         env:
-          TARGET_STATUS: ${{ steps.determine-status.outputs.result }}
+          TARGET_STATUS: ${{ fromJSON(steps.determine-status.outputs.result) }}
           PAT_TOKEN: ${{ secrets.UPDATE_PROJECT_V2_PAT }}
         with:
           github-token: ${{ secrets._GITHUB_PAT_TOKEN }}
