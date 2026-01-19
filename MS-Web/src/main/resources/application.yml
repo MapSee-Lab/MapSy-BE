@@ -1,0 +1,79 @@
+spring:
+    application:
+        name: mapsy
+    profiles:
+        active: prod
+    flyway:
+        enabled: true
+        baseline-on-migrate: true
+        baseline-version: 0.0.0
+        locations: classpath:db/migration
+        sql-migration-prefix: V
+        sql-migration-separator: __
+        sql-migration-suffixes: .sql
+        validate-on-migrate: false
+
+# 서버 설정
+server:
+    port: 8080
+    servlet:
+        context-path: /
+
+# P6Spy 설정
+decorator:
+    datasource:
+        p6spy:
+            enable-logging: true
+            multiline: true
+            logging: slf4j
+
+# Swagger/OpenAPI 설정
+springdoc:
+    servers:
+        - url: https://api.mapsy.suhsaechan.kr
+          description: main-server
+        - url: http://localhost:8080
+          description: local-server
+    api-docs:
+        path: /v3/api-docs
+        enabled: true
+    swagger-ui:
+        path: /docs/swagger
+        enabled: true
+        tags-sorter: alpha
+        operations-sorter: alpha
+        try-it-out-enabled: true
+        filter: true
+    packages-to-scan: kr.suhsaechan.mapsy
+    paths-to-match: /api/**
+    default-consumes-media-type: application/json;charset=UTF-8
+    default-produces-media-type: application/json;charset=UTF-8
+
+# GitHub Issue 연동
+suhapilog:
+    github:
+        base-url: https://github.com/MapSee-Lab/MapSy-BE/issues/
+
+firebase:
+    credentials:
+        path: mapsy-fcm.json
+
+suh-logger:
+  # 전체 로깅 활성화 여부
+  enabled: true                    # true(기본값), false
+  pretty-print-json: true         # false(기본값), true
+  max-response-body-size: 9000     # 양의 정수 (기본값: 4096)
+  exclude-patterns:                # 문자열 배열 (기본값: 빈 배열)
+  #    - /actuator                  # Spring Boot Actuator 제외
+  #    - /health                    # Health Check 제외
+  #    - /login                     # 로그인 엔드포인트 제외 (예시)
+  #    - /logout                    # 로그아웃 엔드포인트 제외 (예시)
+  #    - /auth                      # 인증 관련 엔드포인트 제외 (예시)
+  excluded-classes:                # 문자열 배열 (기본값: 빈 배열)
+  #    - org.springframework.web.multipart.MultipartFile
+  #    - java.util.Vector
+  #    - java.io.File
+  masking:
+    header: true                   # true(기본값), false - 민감한 헤더 마스킹 여부
+  header:
+    enabled: false

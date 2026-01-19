@@ -18,7 +18,7 @@
 # 프로젝트 타입별 동기화 파일:
 # - spring: build.gradle (version = "x.y.z")
 # - flutter: pubspec.yaml (version: x.y.z+i, buildNumber 포함)
-# - react/next/node: package.json ("version": "x.y.z")
+# - react/node: package.json ("version": "x.y.z")
 # - react-native: iOS Info.plist 또는 Android build.gradle
 # - react-native-expo: app.json (expo.version)
 # - python: pyproject.toml (version = "x.y.z")
@@ -34,19 +34,19 @@
 # - 버전은 항상 높은 버전으로 자동 동기화됩니다
 # ===================================================================
 
-version: "0.0.1"
-version_code: 1  # app build number
-project_type: "spring"  # spring, flutter, next, react, react-native, react-native-expo, node, python, basic
+version: "0.1.11"
+version_code: 15 # app build number
+project_type: "spring" # spring, flutter, next, react, react-native, react-native-expo, node, python, basic
 metadata:
-  last_updated: "2026-01-12 17:15:00"
-  last_updated_by: "template_integrator"
+  last_updated: "2026-01-18 16:02:55"
+  last_updated_by: "Cassiiopeia"
   default_branch: "main"
   integrated_from: "SUH-DEVOPS-TEMPLATE"
-  integration_date: "2026-01-12"
+  integration_date: "2026-01-13"
   template:
     source: "SUH-DEVOPS-TEMPLATE"
-    version: "0.0.1"
-    integrated_date: "2026-01-12"
-    last_update_date: "2026-01-12"
+    version: "1.3.14"
+    integrated_date: "2026-01-13"
+    last_update_date: "2026-01-13"
     options:
       synology: true
