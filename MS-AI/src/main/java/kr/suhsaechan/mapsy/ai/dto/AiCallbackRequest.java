@@ -58,7 +58,7 @@ public class AiCallbackRequest {
   public static class SnsInfoCallback {
 
     @Schema(description = "SNS 플랫폼", example = "INSTAGRAM",
-            allowableValues = {"INSTAGRAM", "YOUTUBE", "YOUTUBE_SHORTS", "TIKTOK", "FACEBOOK", "TWITTER"})
+        allowableValues = {"INSTAGRAM", "YOUTUBE", "YOUTUBE_SHORTS", "TIKTOK", "FACEBOOK", "TWITTER"})
     @NotNull(message = "platform은 필수입니다.")
     private String platform;
 

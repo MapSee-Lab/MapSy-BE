@@ -75,11 +75,11 @@ public class AiCallbackService {
     }
 
     log.info("Processing AI callback: contentId={}, resultStatus={}",
-            contentId, request.getResultStatus());
+        contentId, request.getResultStatus());
 
     // Content 조회
     Content content = contentRepository.findById(contentId)
-            .orElseThrow(() -> new CustomException(ErrorCode.CONTENT_NOT_FOUND));
+        .orElseThrow(() -> new CustomException(ErrorCode.CONTENT_NOT_FOUND));
 
     // 결과 상태에 따라 분기 처리
     if ("SUCCESS".equals(request.getResultStatus())) {
@@ -94,9 +94,9 @@ public class AiCallbackService {
     log.info("AI callback processed successfully: contentId={}", contentId);
 
     return AiCallbackResponse.builder()
-            .received(true)
-            .contentId(contentId)
-            .build();
+        .received(true)
+        .contentId(contentId)
+        .build();
   }
 
   /**
@@ -130,7 +130,7 @@ public class AiCallbackService {
     if (request.getPlaceDetails() != null && !request.getPlaceDetails().isEmpty()) {
       List<PlaceDetailCallback> placeDetails = request.getPlaceDetails();
       log.info("Received {} places for contentId={} (update mode: {}). Starting Place creation.",
-              placeDetails.size(), content.getId(), isContentAlreadyCompleted);
+          placeDetails.size(), content.getId(), isContentAlreadyCompleted);
 
       List<Place> savedPlaces = new ArrayList<>();
       int position = 0;
@@ -157,7 +157,7 @@ public class AiCallbackService {
 
       placeCount = savedPlaces.size();
       log.info("Successfully saved {} out of {} places for contentId={}",
-              placeCount, placeDetails.size(), content.getId());
+          placeCount, placeDetails.size(), content.getId());
     } else {
       log.warn("No places found in callback for contentId={}", content.getId());
     }
@@ -175,10 +175,10 @@ public class AiCallbackService {
     }
 
     log.info("Extraction statistics for contentId={}: totalExtracted={}, totalFound={}, failedSearches={}",
-            contentId,
-            statistics.getTotalExtracted(),
-            statistics.getTotalFound(),
-            statistics.getFailedSearches() != null ? statistics.getFailedSearches() : "[]");
+        contentId,
+        statistics.getTotalExtracted(),
+        statistics.getTotalFound(),
+        statistics.getFailedSearches() != null ? statistics.getFailedSearches() : "[]");
 
     if (statistics.getExtractedPlaceNames() != null) {
       log.debug("Extracted place names for contentId={}: {}", contentId, statistics.getExtractedPlaceNames());
@@ -200,7 +200,7 @@ public class AiCallbackService {
         content.setPlatform(kr.suhsaechan.mapsy.sns.constant.ContentPlatform.valueOf(snsInfo.getPlatform()));
       } catch (IllegalArgumentException e) {
         log.error("Invalid platform value: {}. Keeping existing platform for contentId={}",
-                snsInfo.getPlatform(), content.getId());
+            snsInfo.getPlatform(), content.getId());
       }
     }
 
@@ -216,8 +216,8 @@ public class AiCallbackService {
         Optional<Content> existingContent = contentRepository.findByOriginalUrl(newUrl);
         if (existingContent.isPresent() && !existingContent.get().getId().equals(content.getId())) {
           log.warn("Cannot update originalUrl: URL already exists in another Content. " +
-                          "currentContentId={}, existingContentId={}, url={}",
-                  content.getId(), existingContent.get().getId(), newUrl);
+                  "currentContentId={}, existingContentId={}, url={}",
+              content.getId(), existingContent.get().getId(), newUrl);
         } else {
           content.setOriginalUrl(newUrl);
         }
@@ -275,10 +275,10 @@ public class AiCallbackService {
     }
 
     log.debug("Updated Content with SnsInfo: contentId={}, platform={}, contentType={}, author={}",
-            content.getId(),
-            snsInfo.getPlatform(),
-            snsInfo.getContentType(),
-            snsInfo.getAuthor());
+        content.getId(),
+        snsInfo.getPlatform(),
+        snsInfo.getContentType(),
+        snsInfo.getAuthor());
   }
 
   /**
@@ -286,7 +286,7 @@ public class AiCallbackService {
    */
   private void processFailedCallback(Content content, AiCallbackRequest request) {
     log.error("Processing FAILED callback for contentId={}, errorMessage={}",
-            content.getId(), request.getErrorMessage());
+        content.getId(), request.getErrorMessage());
 
     content.setStatus(ContentStatus.FAILED);
     contentRepository.save(content);
@@ -304,7 +304,7 @@ public class AiCallbackService {
     // 1. naverPlaceId로 중복 체크
     if (placeDetail.getPlaceId() != null) {
       Optional<PlacePlatformReference> existingRef = placePlatformReferenceRepository
-              .findByPlacePlatformAndPlacePlatformId(PlacePlatform.NAVER, placeDetail.getPlaceId());
+          .findByPlacePlatformAndPlacePlatformId(PlacePlatform.NAVER, placeDetail.getPlaceId());
 
       if (existingRef.isPresent()) {
         Place existingPlace = existingRef.get().getPlace();
@@ -320,9 +320,9 @@ public class AiCallbackService {
       BigDecimal longitude = BigDecimal.valueOf(placeDetail.getLongitude());
 
       Optional<Place> existing = placeRepository.findByNameAndLatitudeAndLongitude(
-              placeDetail.getName(),
-              latitude,
-              longitude
+          placeDetail.getName(),
+          latitude,
+          longitude
       );
 
       if (existing.isPresent()) {
@@ -345,7 +345,7 @@ public class AiCallbackService {
     createPlacePlatformReferenceIfNotExists(savedPlace, placeDetail.getPlaceId());
 
     log.debug("Created new place: id={}, name={}, naverPlaceId={}",
-            savedPlace.getId(), savedPlace.getName(), placeDetail.getPlaceId());
+        savedPlace.getId(), savedPlace.getName(), placeDetail.getPlaceId());
     return savedPlace;
   }
 
@@ -354,20 +354,20 @@ public class AiCallbackService {
    */
   private Place createNewPlace(PlaceDetailCallback placeDetail) {
     BigDecimal latitude = placeDetail.getLatitude() != null
-            ? BigDecimal.valueOf(placeDetail.getLatitude())
-            : BigDecimal.ZERO;
+        ? BigDecimal.valueOf(placeDetail.getLatitude())
+        : BigDecimal.ZERO;
     BigDecimal longitude = placeDetail.getLongitude() != null
-            ? BigDecimal.valueOf(placeDetail.getLongitude())
-            : BigDecimal.ZERO;
+        ? BigDecimal.valueOf(placeDetail.getLongitude())
+        : BigDecimal.ZERO;
 
     Place place = Place.builder()
-            .name(placeDetail.getName())
-            .address(placeDetail.getAddress())
-            .roadAddress(placeDetail.getRoadAddress())
-            .latitude(latitude)
-            .longitude(longitude)
-            .country("KR")  // 기본값
-            .build();
+        .name(placeDetail.getName())
+        .address(placeDetail.getAddress())
+        .roadAddress(placeDetail.getRoadAddress())
+        .latitude(latitude)
+        .longitude(longitude)
+        .country("KR")  // 기본값
+        .build();
 
     // 모든 필드 설정
     updatePlaceFromPlaceDetail(place, placeDetail);
@@ -468,14 +468,14 @@ public class AiCallbackService {
 
     // 이미 존재하는지 확인
     Optional<PlacePlatformReference> existing = placePlatformReferenceRepository
-            .findByPlaceAndPlacePlatform(place, PlacePlatform.NAVER);
+        .findByPlaceAndPlacePlatform(place, PlacePlatform.NAVER);
 
     if (existing.isEmpty()) {
       PlacePlatformReference reference = PlacePlatformReference.builder()
-              .place(place)
-              .placePlatform(PlacePlatform.NAVER)
-              .placePlatformId(naverPlaceId)
-              .build();
+          .place(place)
+          .placePlatform(PlacePlatform.NAVER)
+          .placePlatformId(naverPlaceId)
+          .build();
       placePlatformReferenceRepository.save(reference);
       log.debug("Created PlacePlatformReference: placeId={}, naverPlaceId={}", place.getId(), naverPlaceId);
     }
@@ -493,10 +493,10 @@ public class AiCallbackService {
     }
 
     ContentPlace contentPlace = ContentPlace.builder()
-            .content(content)
-            .place(place)
-            .position(position)
-            .build();
+        .content(content)
+        .place(place)
+        .position(position)
+        .build();
 
     contentPlaceRepository.save(contentPlace);
     log.debug("Created ContentPlace: contentId={}, placeId={}, position={}", content.getId(), place.getId(), position);
@@ -540,8 +540,8 @@ public class AiCallbackService {
       }
     } else {
       notificationBody = content.getTitle() != null
-              ? content.getTitle() + " 분석이 완료되었습니다."
-              : "콘텐츠 분석이 완료되었습니다.";
+          ? content.getTitle() + " 분석이 완료되었습니다."
+          : "콘텐츠 분석이 완료되었습니다.";
     }
 
     // 각 회원에게 알림 전송
@@ -550,11 +550,11 @@ public class AiCallbackService {
     for (ContentMember contentMember : unnotifiedMembers) {
       try {
         fcmService.sendNotificationToMember(
-                contentMember.getMember().getId(),
-                notificationTitle,
-                notificationBody,
-                notificationData,
-                content.getThumbnailUrl()
+            contentMember.getMember().getId(),
+            notificationTitle,
+            notificationBody,
+            notificationData,
+            content.getThumbnailUrl()
         );
 
         contentMember.setNotified(true);
@@ -562,10 +562,10 @@ public class AiCallbackService {
         successCount++;
 
         log.info("Notification sent successfully to memberId={} for contentId={}",
-                contentMember.getMember().getId(), content.getId());
+            contentMember.getMember().getId(), content.getId());
       } catch (Exception e) {
         log.error("Failed to send notification to memberId={} for contentId={}: {}",
-                contentMember.getMember().getId(), content.getId(), e.getMessage());
+            contentMember.getMember().getId(), content.getId(), e.getMessage());
       }
     }
 
@@ -574,7 +574,7 @@ public class AiCallbackService {
     }
 
     log.info("Content complete notifications sent: {}/{} succeeded for contentId={}",
-            successCount, unnotifiedMembers.size(), content.getId());
+        successCount, unnotifiedMembers.size(), content.getId());
   }
 
   /**
@@ -584,7 +584,7 @@ public class AiCallbackService {
     List<ContentMember> contentMembers = contentMemberRepository.findAllByContentWithMember(content);
 
     log.info("Creating MemberPlace for {} members (contentId={}, placeId={})",
-            contentMembers.size(), content.getId(), place.getId());
+        contentMembers.size(), content.getId(), place.getId());
 
     int createdCount = 0;
     int skippedCount = 0;
@@ -592,35 +592,35 @@ public class AiCallbackService {
     for (ContentMember contentMember : contentMembers) {
       try {
         Optional<MemberPlace> existing = memberPlaceRepository
-                .findByMemberAndPlaceAndDeletedAtIsNull(contentMember.getMember(), place);
+            .findByMemberAndPlaceAndDeletedAtIsNull(contentMember.getMember(), place);
 
         if (existing.isPresent()) {
           log.debug("MemberPlace already exists: memberId={}, placeId={}",
-                  contentMember.getMember().getId(), place.getId());
+              contentMember.getMember().getId(), place.getId());
           skippedCount++;
           continue;
         }
 
         MemberPlace memberPlace = MemberPlace.builder()
-                .member(contentMember.getMember())
-                .place(place)
-                .savedStatus(PlaceSavedStatus.TEMPORARY)
-                .sourceContentId(content.getId())
-                .build();
+            .member(contentMember.getMember())
+            .place(place)
+            .savedStatus(PlaceSavedStatus.TEMPORARY)
+            .sourceContentId(content.getId())
+            .build();
 
         memberPlaceRepository.save(memberPlace);
         createdCount++;
 
         log.debug("MemberPlace created: id={}, memberId={}, placeId={}, status=TEMPORARY",
-                memberPlace.getId(), contentMember.getMember().getId(), place.getId());
+            memberPlace.getId(), contentMember.getMember().getId(), place.getId());
 
       } catch (Exception e) {
         log.error("Failed to create MemberPlace for memberId={}, placeId={}: {}",
-                contentMember.getMember().getId(), place.getId(), e.getMessage());
+            contentMember.getMember().getId(), place.getId(), e.getMessage());
       }
     }
 
     log.info("MemberPlace creation completed: {} created, {} skipped (contentId={}, placeId={})",
-            createdCount, skippedCount, content.getId(), place.getId());
+        createdCount, skippedCount, content.getId(), place.getId());
   }
 }

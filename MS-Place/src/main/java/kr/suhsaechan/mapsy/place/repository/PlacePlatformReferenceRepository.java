@@ -42,7 +42,7 @@ public interface PlacePlatformReferenceRepository extends JpaRepository<PlacePla
    * @return Optional<PlacePlatformReference>
    */
   Optional<PlacePlatformReference> findByPlacePlatformAndPlacePlatformId(
-          PlacePlatform placePlatform,
-          String placePlatformId
+      PlacePlatform placePlatform,
+      String placePlatformId
   );
 }
